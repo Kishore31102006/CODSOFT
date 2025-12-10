@@ -1,0 +1,76 @@
+from google.colab import files
+uploaded = files.upload()
+
+import pandas as pd
+
+# Load dataset
+df = pd.read_excel("credit card.xlsx")
+
+# Preview dataset
+print(df.head())
+print("Shape:", df.shape)
+print("Columns:", df.columns)
+import numpy as np
+
+# Drop duplicates
+df = df.drop_duplicates()
+
+# Handle missing values
+df.replace(['', 'nan', 'NaN'], np.nan, inplace=True)
+df = df.dropna()
+
+print("Missing values after cleaning:\n", df.isnull().sum())
+# Try to find class label column automatically
+target_col = None
+for col in df.columns:
+    if 'class' in col.lower() or 'fraud' in col.lower():
+        target_col = col
+        break
+
+print("Target column:", target_col)
+X = df.drop(target_col, axis=1)
+y = df[target_col]
+from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X_scaled, y, test_size=0.2, random_state=42, stratify=y
+)
+from imblearn.over_sampling import SMOTE
+
+smote = SMOTE(random_state=42, k_neighbors=1)
+X_train_res, y_train_res = smote.fit_resample(X_train, y_train)
+from sklearn.linear_model import LogisticRegression
+
+lr_model = LogisticRegression(max_iter=1000)
+lr_model.fit(X_train_res, y_train_res)
+
+lr_pred = lr_model.predict(X_test)
+from sklearn.ensemble import RandomForestClassifier
+
+rf_model = RandomForestClassifier(random_state=42)
+rf_model.fit(X_train_res, y_train_res)
+
+rf_pred = rf_model.predict(X_test)
+from sklearn.metrics import classification_report, confusion_matrix
+
+print("---- Logistic Regression Results ----")
+print(confusion_matrix(y_test, lr_pred))
+print(classification_report(y_test, lr_pred))
+
+print("---- Random Forest Results ----")
+print(confusion_matrix(y_test, rf_pred))
+print(classification_report(y_test, rf_pred))
+import matplotlib.pyplot as plt
+import numpy as np
+
+importances = rf_model.feature_importances_
+indices = np.argsort(importances)[::-1]
+
+plt.figure()
+plt.bar(range(len(importances)), importances[indices])
+plt.title("Feature Importances")
+plt.show()
