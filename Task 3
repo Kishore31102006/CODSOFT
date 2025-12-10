@@ -1,0 +1,56 @@
+from google.colab import files
+uploaded = files.upload()
+
+import pandas as pd
+
+# Load your dataset
+df = pd.read_excel("IRIS dataset.xlsx")
+
+# Preview data
+print(df.head())
+print("Shape:", df.shape)
+print("Columns:", df.columns)
+# Check missing values
+print(df.isnull().sum())
+
+# Fill missing numeric values with median
+for col in df.columns:
+    if df[col].dtype != 'object':
+        df[col] = df[col].fillna(df[col].median())
+from sklearn.preprocessing import LabelEncoder
+
+le = LabelEncoder()
+
+# Encode species column
+df['species'] = le.fit_transform(df['species'])
+
+print(df.head())
+X = df.drop('species', axis=1)
+y = df['species']
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+from sklearn.linear_model import LogisticRegression
+
+model = LogisticRegression(max_iter=200)
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+from sklearn.ensemble import RandomForestClassifier
+
+rf_model = RandomForestClassifier(random_state=42)
+rf_model.fit(X_train, y_train)
+
+rf_pred = rf_model.predict(X_test)
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+print("Logistic Regression Accuracy:", accuracy_score(y_test, y_pred))
+print("Random Forest Accuracy:", accuracy_score(y_test, rf_pred))
+
+print("\nConfusion Matrix:")
+print(confusion_matrix(y_test, rf_pred))
+
+print("\nClassification Report:")
+print(classification_report(y_test, rf_pred))
