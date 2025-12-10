@@ -1,0 +1,61 @@
+from google.colab import files
+uploaded = files.upload()
+
+import pandas as pd
+
+# Load dataset
+df = pd.read_excel("movie rating.xlsx")
+
+# Preview dataset
+print(df.head())
+print("Shape:", df.shape)
+print("Columns:", df.columns)
+# Check missing values
+print(df.isnull().sum())
+
+# Drop duplicates
+df = df.drop_duplicates()
+
+# Fill missing values safely
+for col in df.columns:
+    if df[col].dtype == 'object':
+        df[col] = df[col].fillna('Unknown')
+    else:
+        df[col] = df[col].fillna(df[col].median())
+X = df.drop('Rating', axis=1)
+y = df['Rating']
+from sklearn.preprocessing import LabelEncoder
+
+le = LabelEncoder()
+
+for col in X.columns:
+    if X[col].dtype == 'object':
+        # Ensure all values in the column are string type before encoding
+        X[col] = X[col].astype(str)
+        X[col] = le.fit_transform(X[col])
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+from sklearn.linear_model import LinearRegression
+
+model = LinearRegression()
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+
+print("MAE:", mean_absolute_error(y_test, y_pred))
+print("MSE:", mean_squared_error(y_test, y_pred))
+print("R2 Score:", r2_score(y_test, y_pred))
+from sklearn.ensemble import RandomForestRegressor
+
+rf_model = RandomForestRegressor(random_state=42)
+rf_model.fit(X_train, y_train)
+
+rf_pred = rf_model.predict(X_test)
+
+print("Random Forest MAE:", mean_absolute_error(y_test, rf_pred))
+print("Random Forest MSE:", mean_squared_error(y_test, rf_pred))
+print("Random Forest R2 Score:", r2_score(y_test, rf_pred))
+print(df.columns)
